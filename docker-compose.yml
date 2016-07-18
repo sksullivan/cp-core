@@ -1,0 +1,6 @@
+core:
+  image: "cp/core"
+  ports:
+    - "3000:3000"
+# web:
+  # image: "cp/web"
