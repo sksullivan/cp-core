@@ -1,20 +1,22 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+const express = require('express');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 
-var serverData = require('./models/server-data')
+const serverData = require('./models/server-data')
+const store = require('./models/store');
 
-var routes = require('./routes/index');
-var users = require('./routes/user');
+const routes = require('./routes/index');
+const users = require('./routes/user');
 
-var app = express();
+var app = module.exports = express();
 
-var env = process.env.NODE_ENV || 'development';
-app.locals.ENV = env;
-app.locals.ENV_DEVELOPMENT = env == 'development';
+const config = require('./config/config');
+if (!config) {
+  process.exit();
+}
 
 // app.use(favicon(__dirname + '/public/img/favicon.ico'));
 app.use(logger('dev'));
@@ -25,8 +27,8 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', routes);
-app.use('/users', users);
+app.get('/users/:userId', users.listUser);
+app.post('/users', users.newUser);
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -34,34 +36,17 @@ app.use(function(req, res, next) {
     res.status(400).json(err);
 });
 
-/// error handlers
 
-// development error handler
-// will print stacktrace
+app.set('port', process.env.PORT || config.port);
 
-if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
-        res.status(500).json('error', {
-            message: err.message,
-            error: err,
-            title: 'error'
-        });
-    });
+store.connect()
+  .on('error', console.log)
+  .on('disconnected', store.connect)
+  .once('open', listen);
+
+function listen () {
+  if (app.get('env') === 'test') { return; }
+  app.listen(app.get('port'), function() {
+    console.log('Express server listening on port ' + config.port);
+  });
 }
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-    res.status(500).json('error', {
-        message: err.message,
-        error: {},
-        title: 'error'
-    });
-});
-
-
-app.set('port', process.env.PORT || 3000);
-
-var server = app.listen(app.get('port'), function() {
-  console.log('Express server listening on port ' + server.address().port);
-});
