@@ -8,6 +8,13 @@ core:
     - "3000:3000"
   links:
     - store
+web:
+  build: ../cp-web
+  ports:
+    - "80:80"
+  links:
+    - core
+
 #  volumes:
 #   - "/data/db:/data/db"
 # web:
